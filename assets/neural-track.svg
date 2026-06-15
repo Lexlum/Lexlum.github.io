@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1000" role="img" aria-label="Neural model track">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#24281f"/>
+      <stop offset="0.52" stop-color="#11140f"/>
+      <stop offset="1" stop-color="#1e352f"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="1" y1="1" y2="0">
+      <stop offset="0" stop-color="#c8ff00"/>
+      <stop offset="0.42" stop-color="#49d8ff"/>
+      <stop offset="1" stop-color="#ff8f3c"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="45%" r="50%">
+      <stop offset="0" stop-color="#c8ff00" stop-opacity="0.42"/>
+      <stop offset="0.5" stop-color="#49d8ff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#c8ff00" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="1000" fill="url(#bg)"/>
+  <rect width="1200" height="1000" fill="url(#halo)"/>
+  <g opacity="0.22" stroke="#f4f7ec" stroke-width="1">
+    <path d="M0 220h1200M0 380h1200M0 540h1200M0 700h1200"/>
+    <path d="M160 0v1000M360 0v1000M600 0v1000M840 0v1000M1040 0v1000"/>
+  </g>
+  <g fill="none" stroke="url(#road)" stroke-linecap="round" filter="url(#glow)">
+    <path d="M100 860C330 650 420 680 548 512c128-168 212-290 452-350" stroke-width="30"/>
+    <path d="M142 910C348 720 488 706 628 548c142-160 216-250 448-320" stroke-width="8" opacity="0.8"/>
+    <path d="M244 910C438 746 552 750 704 588c126-134 244-222 382-262" stroke-width="5" opacity="0.7"/>
+  </g>
+  <g fill="#11140f" stroke="#c8ff00" stroke-width="5">
+    <circle cx="254" cy="760" r="34"/>
+    <circle cx="458" cy="660" r="28"/>
+    <circle cx="620" cy="520" r="42"/>
+    <circle cx="792" cy="360" r="31"/>
+    <circle cx="984" cy="234" r="46"/>
+  </g>
+  <g fill="#c8ff00">
+    <circle cx="254" cy="760" r="10"/>
+    <circle cx="458" cy="660" r="9"/>
+    <circle cx="620" cy="520" r="12"/>
+    <circle cx="792" cy="360" r="9"/>
+    <circle cx="984" cy="234" r="13"/>
+  </g>
+  <g transform="translate(704 610)" fill="none" stroke="#f4f7ec" stroke-width="3" opacity="0.9">
+    <rect x="0" y="0" width="330" height="168" rx="8" fill="#11140f" opacity="0.82"/>
+    <path d="M30 46h112M30 86h180M30 126h132" stroke="#c8ff00"/>
+    <path d="M232 36h60v60h-60zM246 112h78M246 134h54" stroke="#49d8ff"/>
+  </g>
+</svg>

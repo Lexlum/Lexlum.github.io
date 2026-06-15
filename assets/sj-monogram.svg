@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="SJ monogram">
+  <rect width="120" height="120" rx="8" fill="#c8ff00"/>
+  <path d="M28 29h45v15H44v18h29v49H28V96h29V77H28V29Z" fill="#151810"/>
+  <path d="M78 29h15v68c0 10-7 17-18 17H57V99h16c3 0 5-2 5-5V29Z" fill="#151810"/>
+  <path d="M31 20h58M21 31v58M31 100h58M100 31v58" stroke="#151810" stroke-width="4" stroke-linecap="square"/>
+</svg>
