@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>终端日志打字机 · Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0C0C0C;
+    --term-bg: #111114;
+    --term-border: #26262b;
+    --text: #D7E2EA;
+    --green: #6ee7a8;
+    --cyan: #67e8f9;
+    --yellow: #fde047;
+    --red: #fb7185;
+    --dim: #6b7280;
+    --prompt: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); min-height: 100vh; }
+  body {
+    font-family: 'JetBrains Mono', 'Noto Sans SC', ui-monospace, monospace;
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .label { color: var(--dim); font-size: 13px; margin-bottom: 24px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .terminal {
+    width: min(720px, 100%);
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .titlebar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    background: #18181c;
+    border-bottom: 1px solid var(--term-border);
+  }
+  .dots { display: flex; gap: 7px; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .dots i:nth-child(1) { background: #ff5f57; }
+  .dots i:nth-child(2) { background: #febc2e; }
+  .dots i:nth-child(3) { background: #28c840; }
+  .title { color: var(--dim); font-size: 12.5px; margin-left: 8px; letter-spacing: 0.02em; }
+
+  .screen {
+    height: 420px;
+    padding: 18px 20px;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.7;
+    position: relative;
+  }
+  .line { white-space: pre; }
+  .line .prompt { color: var(--prompt); }
+  .line .cmd { color: var(--text); }
+  .line .ok { color: var(--green); }
+  .line .warn { color: var(--yellow); }
+  .line .err { color: var(--red); }
+  .line .key { color: var(--cyan); }
+  .line .dim { color: var(--dim); }
+  .line .val { color: var(--green); font-weight: 500; }
+
+  /* progress bar */
+  .bar { color: var(--green); }
+  .bar .fill { color: var(--green); }
+  .bar .empty { color: #2a2a30; }
+
+  .cursor {
+    display: inline-block; width: 8px; height: 16px; background: var(--green);
+    vertical-align: text-bottom; margin-left: 2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .controls {
+    margin-top: 20px; display: flex; gap: 12px; align-items: center;
+    color: var(--dim); font-size: 12.5px;
+  }
+  .controls button {
+    background: #18181c; color: var(--text); border: 1px solid var(--term-border);
+    border-radius: 8px; padding: 7px 14px; cursor: pointer; font: inherit; font-size: 12px;
+  }
+  .controls button:hover { border-color: var(--green); color: var(--green); }
+</style>
+</head>
+<body>
+  <div class="label">Terminal Log · Demo Preview</div>
+
+  <div class="terminal" id="term">
+    <div class="titlebar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <span class="title">shengjie@llm-dev — train.log</span>
+    </div>
+    <div class="screen" id="screen"></div>
+  </div>
+
+  <div class="controls">
+    <button id="pause">⏸ 暂停</button>
+    <button id="restart">↻ 重新开始</button>
+    <span>悬停暂停 · ESC 也行</span>
+  </div>
+
+<script>
+// ============================================================
+// 日志内容 —— 4 段循环，对应：训练 / 推理部署 / Agent / 端侧
+// 每行是一个对象: { t: 类型, text: 内容 }
+// 类型: 'cmd'(命令), 'ok'(成功), 'warn'(警告), 'bar'(进度条), 'dim'(灰色), 'blank'(空行)
+// 内容里支持 [k]key[/k] [v]value[/v] [d]dim[/d] 着色标记
+// ============================================================
+const SEGMENTS = [
+  {
+    header: "// [ Segment 1 ] 模型训练 — DFM 系列",
+    lines: [
+      { t: "cmd", text: "[p]$[/p] [k]init[/k] cluster [v]A800 x100[/v]" },
+      { t: "ok",  text: "  └─ nodes online            [ok]ok[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]load[/k] model [v]DFM-235B-MoE[/v]" },
+      { t: "ok",  text: "  └─ weights loaded          [ok]ok[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]strategy[/k] = [v]CP + SP + EP + Packing[/v]" },
+      { t: "bar", text: "training  [fill]████████░░[/fill][empty]  [/empty] MFU [v]37%[/v]" },
+      { t: "ok",  text: "  └─ efficiency [v]+18%[/v]        [ok]done[/ok]" },
+      { t: "dim", text: "[d]→ 江苏省首个双备案模型[/d]" },
+    ],
+  },
+  {
+    header: "// [ Segment 2 ] 推理与部署",
+    lines: [
+      { t: "cmd", text: "[p]$[/p] [k]deploy[/k] runtime [v]vLLM + SGLang + MindIE[/v]" },
+      { t: "ok",  text: "  └─ servers up              [ok]ok[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]quantize[/k] [v]GPTQ / AWQ / QAT[/v]" },
+      { t: "ok",  text: "  └─ kv-cache prefix enabled [ok]ok[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]benchmark[/k] vs A800 baseline" },
+      { t: "bar", text: "infer     [fill]██████████[/fill]      [v]aligned[/v]" },
+      { t: "warn",text: "  └─ speculative decoding    [warn]eagle/medusa[/warn]" },
+      { t: "dim", text: "[d]→ 速度达 Nvidia 70%，单次成本降一倍[/d]" },
+    ],
+  },
+  {
+    header: "// [ Segment 3 ] 分布式智能体",
+    lines: [
+      { t: "cmd", text: "[p]$[/p] [k]start[/k] [v]MCPhub[/v] agent gateway" },
+      { t: "ok",  text: "  └─ multi-mcp integrated    [ok]online[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]load[/k] tools npm/uvx/sse/dxt" },
+      { t: "ok",  text: "  └─ toollist cached         [ok]ok[/ok]" },
+      { t: "cmd", text: "[p]$[/p] [k]vehicle-agent[/k] = function_call + memory" },
+      { t: "bar", text: "workflow  [fill]██████████[/fill]      [v]hybrid call[/v]" },
+      { t: "ok",  text: "  └─ monitoring              [ok]prometheus+grafana[/ok]" },
+      { t: "dim", text: "[d]→ 车控 Agent 已上线使用[/d]" },
+    ],
+  },
+  {
+    header: "// [ Segment 4 ] 端侧运行时",
+    lines: [
+      { t: "cmd", text: "[p]$[/p] [k]profile[/k] edge chips 8295/MTK8678/RK3588" },
+      { t: "warn",text: "  └─ bottleneck = [warn]memory bandwidth[/warn]" },
+      { t: "cmd", text: "[p]$[/p] [k]compile[/k] MTK [v]INT4 weight + INT16 act[/v]" },
+      { t: "ok",  text: "  └─ kv-cache chunked prefill [ok]ok[/ok]" },
+      { t: "bar", text: "throughput[fill]██████████[/fill]      [v]3.3x[/v]" },
+      { t: "ok",  text: "  └─ first-token latency     [v]-67%[/v]" },
+      { t: "dim", text: "[d]→ 万字会议 35min → 8min，超竞品 2.7x[/d]" },
+    ],
+  },
+];
+
+// ============================================================
+// 着色标记渲染
+// ============================================================
+function renderMarkup(text) {
+  // [tag]...[/tag] -> <span class=tag>...</span>
+  const map = { p:"prompt", k:"key", v:"val", ok:"ok", warn:"warn", d:"dim", fill:"bar fill", empty:"bar empty" };
+  return text.replace(/\[(\/?)(\w+)\]/g, (m, slash, tag) => {
+    if (slash) return "</span>";
+    const cls = map[tag];
+    return cls ? `<span class="${cls}">` : `<span>`;
+  });
+}
+
+// ============================================================
+// 打字机引擎
+// ============================================================
+const screen = document.getElementById("screen");
+const pauseBtn = document.getElementById("pause");
+const restartBtn = document.getElementById("restart");
+
+let state = {
+  segIdx: 0,      // 当前段
+  lineIdx: 0,     // 段内行
+  charIdx: 0,     // 行内字符
+  mode: "type",   // type | lineDone | segmentGap
+  timer: null,
+  paused: false,
+  hoverPaused: false,
+};
+
+const TYPE_MS = 24;       // 每字符间隔
+const LINE_GAP = 180;     // 行间停顿
+const SEG_GAP = 1400;     // 段间停顿
+const MAX_LINES = 13;     // 屏幕可见行数（超出滚动）
+
+function clearScreen() { screen.innerHTML = ""; }
+
+function pushLine(html) {
+  const div = document.createElement("div");
+  div.className = "line";
+  div.innerHTML = html;
+  screen.appendChild(div);
+  // 滚动：超过可见行数，移除最旧的
+  while (screen.children.length > MAX_LINES) {
+    screen.removeChild(screen.firstChild);
+  }
+}
+
+function currentSegment() { return SEGMENTS[state.segIdx]; }
+
+function tick() {
+  if (state.paused || state.hoverPaused) { schedule(120); return; }
+
+  if (state.mode === "segmentGap") {
+    // 进入新段：打 header
+    state.mode = "type";
+    state.lineIdx = 0;
+    state.charIdx = 0;
+    pushLine('<span class="dim">' + currentSegment().header + "</span>");
+    schedule(LINE_GAP);
+    return;
+  }
+
+  const seg = currentSegment();
+  if (state.lineIdx >= seg.lines.length) {
+    // 段结束 → 等待 → 下一段
+    state.mode = "segmentGap";
+    state.segIdx = (state.segIdx + 1) % SEGMENTS.length;
+    schedule(SEG_GAP);
+    return;
+  }
+
+  const line = seg.lines[state.lineIdx];
+  if (state.mode === "type") {
+    state.charIdx++;
+    // 渲染到当前字符数（基于可见文本长度，忽略标记）
+    const visibleLen = line.text.replace(/\[\/?\w+\]/g, "").length;
+    // 我们逐可见字符推进：简化为直接每次输出整行的已渲染html（一次性打完该行）
+    // 为了真正的逐字效果，改用字符切片：
+    renderPartialLine(line.text, state.charIdx);
+    if (state.charIdx >= visibleLen) {
+      state.mode = "lineDone";
+      schedule(LINE_GAP);
+    } else {
+      schedule(TYPE_MS);
+    }
+    return;
+  }
+
+  if (state.mode === "lineDone") {
+    state.lineIdx++;
+    state.charIdx = 0;
+    state.mode = "type";
+    schedule(60);
+    return;
+  }
+}
+
+// 逐可见字符切片渲染：保留标记但只显示前 n 个可见字符
+function renderPartialLine(text, visibleN) {
+  // 解析标记，统计可见字符
+  let out = "";
+  let count = 0;
+  let i = 0;
+  const tagRe = /\[(\/?)(\w+)\]/;
+  while (i < text.length) {
+    const m = text.slice(i).match(tagRe);
+    if (m && m.index === 0) {
+      const slash = m[1], tag = m[2];
+      out += slash ? "</span>" : openTag(tag);
+      i += m[0].length;
+    } else {
+      if (count < visibleN) { out += text[i]; count++; }
+      i++;
+      if (count >= visibleN) {
+        // 跳过剩余可见字符，但仍要闭合已开的 span
+        // 找到剩余文本里的所有闭合标记并补上
+      }
+    }
+  }
+  // 更新最后一行（当前正在打的行）
+  let last = screen.lastElementChild;
+  if (!last || !last.dataset.typing) {
+    last = document.createElement("div");
+    last.className = "line";
+    last.dataset.typing = "1";
+    screen.appendChild(last);
+    while (screen.children.length > MAX_LINES) screen.removeChild(screen.firstChild);
+  }
+  // 加光标
+  last.innerHTML = out + '<span class="cursor"></span>';
+}
+
+function openTag(tag) {
+  const map = { p:"prompt", k:"key", v:"val", ok:"ok", warn:"warn", d:"dim", fill:"bar fill", empty:"bar empty" };
+  return `<span class="${map[tag] || tag}">`;
+}
+
+function commitLine() {
+  // 行打完，去掉 typing 标记和光标，定格为最终渲染
+  const last = screen.lastElementChild;
+  if (last && last.dataset.typing) {
+    delete last.dataset.typing;
+    last.innerHTML = renderMarkup(currentSegment().lines[state.lineIdx].text);
+  }
+}
+
+// 重写 tick 中 lineDone 提交逻辑：在切换行前 commit
+const _tickOriginal = tick;
+function tick2() {
+  if (state.paused || state.hoverPaused) { schedule(120); return; }
+  if (state.mode === "segmentGap") {
+    state.mode = "type"; state.lineIdx = 0; state.charIdx = 0;
+    pushLine('<span class="dim">' + currentSegment().header + "</span>");
+    schedule(LINE_GAP); return;
+  }
+  const seg = currentSegment();
+  if (state.lineIdx >= seg.lines.length) {
+    state.mode = "segmentGap";
+    state.segIdx = (state.segIdx + 1) % SEGMENTS.length;
+    schedule(SEG_GAP); return;
+  }
+  const line = seg.lines[state.lineIdx];
+  if (state.mode === "type") {
+    state.charIdx++;
+    const visibleLen = line.text.replace(/\[\/?\w+\]/g, "").length;
+    renderPartialLine(line.text, state.charIdx);
+    if (state.charIdx >= visibleLen) {
+      commitLine();
+      state.mode = "lineDone";
+      schedule(LINE_GAP);
+    } else schedule(TYPE_MS);
+    return;
+  }
+  if (state.mode === "lineDone") {
+    state.lineIdx++; state.charIdx = 0; state.mode = "type";
+    schedule(50); return;
+  }
+}
+
+function schedule(ms) {
+  clearTimeout(state.timer);
+  state.timer = setTimeout(tick2, ms);
+}
+
+function start() {
+  clearScreen();
+  state = { segIdx:0, lineIdx:0, charIdx:0, mode:"segmentGap", timer:null, paused:false, hoverPaused:false };
+  schedule(300);
+}
+function stop() { clearTimeout(state.timer); }
+
+// 控件
+pauseBtn.addEventListener("click", () => {
+  state.paused = !state.paused;
+  pauseBtn.textContent = state.paused ? "▶ 继续" : "⏸ 暂停";
+  if (!state.paused) schedule(50);
+});
+restartBtn.addEventListener("click", () => { stop(); start(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { state.paused = !state.paused; pauseBtn.textContent = state.paused ? "▶ 继续" : "⏸ 暂停"; if(!state.paused) schedule(50); }
+});
+document.getElementById("term").addEventListener("mouseenter", () => { state.hoverPaused = true; });
+document.getElementById("term").addEventListener("mouseleave", () => { state.hoverPaused = false; if(!state.paused) schedule(50); });
+
+start();
+</script>
+</body>
+</html>
