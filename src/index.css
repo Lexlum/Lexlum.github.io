@@ -22,16 +22,6 @@ body {
   color: #d7e2ea;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* 强制页面整体缩放到 50%，模拟浏览器 50% 缩放 */
-  zoom: 0.5;
-}
-/* Firefox 不支持 zoom，用 transform 兜底 */
-@supports not (zoom: 0.5) {
-  body {
-    transform: scale(0.5);
-    transform-origin: top left;
-    width: 200vw;
-  }
 }
 
 /* ============================================================

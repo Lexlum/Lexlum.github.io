@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface BouncingAvatarProps {
   src: string;
@@ -39,18 +39,22 @@ export default function BouncingAvatar({
   const raf = useRef<number | null>(null);
   const dragging = useRef(false);
   const sizeRef = useRef(size);
-  sizeRef.current = size;
   // Tracks the last few pointer positions to estimate throw velocity.
   const dragTrail = useRef<{ t: number; x: number; y: number }[]>([]);
 
   // Source image aspect ratio — used to derive the rendered height from width.
   // Loaded from the real image; defaults to the known 1450x1570 ratio.
   const aspectRef = useRef(1570 / 1450);
+  const [aspectRatio, setAspectRatio] = useState(1570 / 1450);
   const dims = () => {
     const w = sizeRef.current;
     const h = w * aspectRef.current;
     return { w, h };
   };
+
+  useEffect(() => {
+    sizeRef.current = size;
+  }, [size]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -227,7 +231,7 @@ export default function BouncingAvatar({
         onPointerDown={onAvatarPointerDown}
         style={{
           width: size,
-          height: size * aspectRef.current,
+          height: size * aspectRatio,
           willChange: "transform",
           cursor: "grab",
           touchAction: "none",
@@ -240,11 +244,9 @@ export default function BouncingAvatar({
           onLoad={(e) => {
             const img = e.currentTarget;
             if (img.naturalWidth && img.naturalHeight) {
-              aspectRef.current = img.naturalHeight / img.naturalWidth;
-              // Trigger a re-render so the box picks up the real ratio.
-              if (imgRef.current) {
-                imgRef.current.style.height = `${size * aspectRef.current}px`;
-              }
+              const nextAspectRatio = img.naturalHeight / img.naturalWidth;
+              aspectRef.current = nextAspectRatio;
+              setAspectRatio(nextAspectRatio);
             }
           }}
           className="w-full h-full rounded-[40px] object-contain select-none pointer-events-none"
