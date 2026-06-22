@@ -7,10 +7,9 @@ import { PROFILE } from "../data/resume";
 const PORTRAIT_URL =
   "https://shrug-person-78902957.figma.site/_components/v2/d24c01ad3a56fc65e942a1f501eb73db42d7cf9a/Rectangle_40443.81459862.png";
 
-// Avatar size scales with viewport so it's huge on desktop but fits on mobile.
+// Avatar size scales with viewport without overwhelming the hero copy.
 function avatarSizeFor(width: number): number {
-  // ~ min(660px, 70vw) — capped so it never exceeds the stage width.
-  return Math.min(660, Math.round(width * 0.7));
+  return Math.max(260, Math.min(480, Math.round(width * 0.46)));
 }
 
 export default function HeroSection() {
