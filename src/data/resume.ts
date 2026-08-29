@@ -16,6 +16,10 @@ export const PROFILE = {
   researchFocus: "自然语言处理 / 大语言模型 / 知识图谱",
 };
 
+/** 卡通头像（Figma 托管，Hero 弹跳层与工牌共用） */
+export const PORTRAIT_IMG =
+  "https://shrug-person-78902957.figma.site/_components/v2/d24c01ad3a56fc65e942a1f501eb73db42d7cf9a/Rectangle_40443.81459862.png";
+
 export const ABOUT_TEXT =
   "超过五年大模型研发经验，专注 LLM 训练、推理加速、车载智能体、Agent 系统与端侧运行时。我把训练数据、推理延迟、工具调用和业务回流放在同一张桌面上看，目标是让模型版本可解释、问题可复现、能力可上线。";
 

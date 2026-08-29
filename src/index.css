@@ -145,3 +145,373 @@ body {
   height: auto;
   display: block;
 }
+
+/* ============================================================
+   Work badge — 挂绳工牌（物理交互）
+   fixed 常驻右上角，从导航栏底边垂下：
+   · top 66px ≈ 导航栏收缩后的高度，绳头始终贴着栏底
+   · z-30：导航栏(z-50)之下（甩上去会穿到毛玻璃后面），
+     移动端菜单抽屉(z-40)之下，页面内容之上
+   · 舞台 pointer-events:none，只有卡片可交互，不挡按钮点击
+   ============================================================ */
+.badge-stage {
+  position: fixed;
+  top: 66px;
+  /* 绳头对齐导航栏"链接与 CONTACT 按钮之间的空档"：
+     随 max-w-7xl 容器居中偏移 + 110px，任何屏宽都不压按钮 */
+  right: calc(max((100vw - 1280px) / 2, 0px) + 110px);
+  width: clamp(200px, 20vw, 290px);
+  height: min(58vh, 540px);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.badge-strap-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
+}
+.badge-strap-bg {
+  fill: none;
+  stroke: #131419;
+  stroke-width: 15;
+  stroke-linecap: round;
+}
+.badge-strap-edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.09);
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+.badge-strap-text {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8px;
+  letter-spacing: 1.6px;
+  fill: rgba(215, 226, 234, 0.5);
+}
+
+/* 刚体容器：transform 每帧由物理引擎写入，吊点 = 顶部中心 */
+.badge-rigid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  transform-origin: top center;
+  perspective: 1100px;
+  pointer-events: auto;
+  cursor: grab;
+  outline: none;
+}
+.badge-rigid:focus-visible {
+  filter: drop-shadow(0 0 6px rgba(182, 0, 168, 0.8));
+}
+
+/* 金属夹 */
+.badge-clip {
+  position: relative;
+  z-index: 3;
+  margin: 0 auto;
+  width: 34px;
+  border-radius: 7px 7px 5px 5px;
+  background: linear-gradient(
+    165deg,
+    #f2f5f7 0%,
+    #aeb8c0 28%,
+    #5f6a73 50%,
+    #cdd6dc 64%,
+    #77828b 100%
+  );
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+}
+.badge-clip-hole {
+  display: block;
+  margin: 9px auto 0;
+  width: 14px;
+  height: 7px;
+  border-radius: 4px;
+  background: #0c0c0c;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* 翻转层 + 卡面 */
+.badge-flip {
+  position: relative;
+  width: 100%;
+  height: 384px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.badge-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* PVC 微噪点 */
+.badge-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.badge-front {
+  background: linear-gradient(178deg, #fbfcfd 0%, #eef1f4 70%, #e6eaee 100%);
+  color: #101114;
+  box-shadow:
+    0 34px 64px -20px rgba(0, 0, 0, 0.7),
+    0 8px 18px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -2px 6px rgba(12, 12, 12, 0.08);
+}
+.badge-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(178deg, #101116 0%, #17181f 100%);
+  color: #d7e2ea;
+  box-shadow:
+    0 34px 64px -20px rgba(0, 0, 0, 0.7),
+    0 8px 18px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* 卡顶鸡眼挂孔 */
+.badge-slot {
+  margin-top: 10px;
+  width: 30px;
+  height: 12px;
+  border-radius: 7px;
+  background: #0c0c0c;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.badge-front .badge-slot {
+  border: 3px solid #c7ced4; /* 金属鸡眼圈 */
+}
+
+.badge-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px 0;
+}
+.badge-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: linear-gradient(123deg, #18011f 7%, #b600a8 37%, #7621b0 72%, #be4c00 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.badge-org {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  opacity: 0.72;
+  text-transform: uppercase;
+}
+
+.badge-photo-wrap {
+  margin-top: 12px;
+  width: 108px;
+  height: 118px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #dfe5ea;
+  box-shadow:
+    inset 0 0 0 1px rgba(12, 12, 12, 0.12),
+    0 2px 6px rgba(12, 12, 12, 0.15);
+}
+.badge-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.badge-name-cn {
+  margin-top: 12px;
+  font-family: "Noto Sans SC", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-indent: 6px; /* 视觉居中补偿 */
+  line-height: 1;
+}
+.badge-name-en {
+  margin-top: 5px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 3.5px;
+  opacity: 0.55;
+}
+.badge-title-chip {
+  margin-top: 10px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: linear-gradient(123deg, #18011f 7%, #b600a8 37%, #7621b0 72%, #be4c00 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+.badge-id-row {
+  margin-top: 10px;
+  width: 100%;
+  padding: 0 18px;
+  display: flex;
+  justify-content: space-between;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 8.5px;
+  letter-spacing: 1.2px;
+  opacity: 0.5;
+}
+
+.badge-barcode {
+  margin-top: auto;
+  width: 82%;
+  height: 30px;
+  background: repeating-linear-gradient(
+    90deg,
+    #101114 0 2px,
+    transparent 2px 5px,
+    #101114 5px 6px,
+    transparent 6px 10px,
+    #101114 10px 13px,
+    transparent 13px 15px,
+    #101114 15px 16px,
+    transparent 16px 21px,
+    #101114 21px 22px,
+    transparent 22px 24px
+  );
+  opacity: 0.85;
+}
+.badge-barcode--back {
+  filter: invert(1);
+  opacity: 0.7;
+  height: 22px;
+}
+
+.badge-foot {
+  margin: 6px 0 12px;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 7.5px;
+  letter-spacing: 2.2px;
+  opacity: 0.45;
+}
+
+/* 背面元素 */
+.badge-magstripe {
+  width: 100%;
+  height: 44px;
+  margin-top: 14px;
+  background: #08090c;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+.badge-back-title {
+  margin-top: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  opacity: 0.75;
+  text-transform: uppercase;
+}
+.badge-back-rows {
+  margin-top: 14px;
+  width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.badge-back-rows div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.badge-back-rows i {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-style: normal;
+  font-size: 8px;
+  letter-spacing: 2px;
+  opacity: 0.45;
+}
+.badge-back-rows b {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.badge-back-bottom {
+  margin-top: auto;
+  width: 78%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.badge-chip {
+  width: 34px;
+  height: 26px;
+  border-radius: 5px;
+  background: linear-gradient(140deg, #e8d9a8 0%, #c8ab6b 45%, #f2e6bb 70%, #b3934f 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 96, 40, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+
+/* 卡包顶层浮动 */
+@keyframes pack-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* 动态高光：background-position 由物理引擎按翻转角驱动 */
+.badge-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.38) 50%,
+    transparent 60%
+  );
+  background-size: 280% 100%;
+  background-repeat: no-repeat;
+  mix-blend-mode: overlay;
+}
+
+@media (max-width: 767px) {
+  .badge-stage {
+    top: 60px;
+    right: 10px;
+    width: 150px;
+    height: 360px;
+  }
+}

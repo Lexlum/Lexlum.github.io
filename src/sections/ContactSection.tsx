@@ -4,7 +4,11 @@ import { PROFILE, HOBBIES } from "../data/resume";
 
 export default function ContactSection() {
   return (
-    <section id="contact" className="bg-[#0C0C0C] px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32 scroll-mt-24">
+    <section
+      id="contact"
+      className="bg-[#0C0C0C] rounded-t-[40px] sm:rounded-t-[50px] md:rounded-t-[60px]
+        -mt-10 sm:-mt-12 md:-mt-14 z-30 relative px-5 sm:px-8 md:px-10 py-20 sm:py-24 md:py-32 scroll-mt-24"
+    >
       <div className="max-w-4xl mx-auto flex flex-col items-center text-center">
         <FadeIn
           delay={0}

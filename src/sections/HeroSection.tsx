@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import FadeIn from "../components/FadeIn";
 import BouncingAvatar from "../components/BouncingAvatar";
 import ContactButton from "../components/ContactButton";
-import { PROFILE } from "../data/resume";
+import { PROFILE, PORTRAIT_IMG } from "../data/resume";
 
-const PORTRAIT_URL =
-  "https://shrug-person-78902957.figma.site/_components/v2/d24c01ad3a56fc65e942a1f501eb73db42d7cf9a/Rectangle_40443.81459862.png";
+const PORTRAIT_URL = PORTRAIT_IMG;
 
 // Avatar size scales with viewport without overwhelming the hero copy.
 function avatarSizeFor(width: number): number {
